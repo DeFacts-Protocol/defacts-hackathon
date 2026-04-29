@@ -1,0 +1,17 @@
+{
+  "name": "@defacts/agent-fresh",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DeFacts fresh-mode supplier agent: calls a configured prover endpoint to generate fresh receipts on each query.",
+  "main": "src/runtime.mjs",
+  "exports": {
+    ".": "./src/runtime.mjs"
+  },
+  "scripts": {
+    "test": "bash test/acceptance.sh",
+    "start": "node src/main.mjs"
+  },
+  "dependencies": {
+    "@defacts/axl-client": "file:../../packages/axl-client"
+  }
+}
