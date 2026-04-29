@@ -1,0 +1,70 @@
+{
+  "chainId": 16602,
+  "verifyingContract": "0x0000000000000000000000000000000000000001",
+  "privateKey": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "expectedSigner": "0x8fd379246834eac74B8419FfdA202CF8051F7A03",
+  "domainSeparator": "0x82e337d0fe707927b3ad9563e4250e8ebcbacf6ab29d1724724abd2722734ade",
+  "tier1": {
+    "typeString": "Tier1Attestation(bytes32 psec_version,bytes32 model_commitment,bytes32 input_hash,bytes32 output_hash,uint8 tier)",
+    "typeHash": "0x6f649705648bfb244f2dc6d5aea5280e8bbae5a526497f5792bc7d5c84aacc21",
+    "message": {
+      "psec_version": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "model_commitment": "0x2222222222222222222222222222222222222222222222222222222222222222",
+      "input_hash": "0x05c0be0a90d620aaa058e271a2d96610aa364b818ddd48dd7db44a62b398ae4f",
+      "output_hash": "0x6885e4e69b852f544e263d63bbdb73716a2524ba0e9abc69527ad6f4cef18aba",
+      "tier": 1
+    },
+    "structHash": "0x5c26b10098d8c7ae21aeda69bd61023a3ab32979e1cb6af58ab5e76d8283b4b9",
+    "digest": "0x75100790f61a2c7ad054182249194bdd62bf0fff6e98dcbe852f7a62e8922425",
+    "signature": "0x3c345d902a5873f5c134acb642bebda57cb67f42f66af0aa8061ebdd7a43c79b66ac33e745ca78138cb9694540918e6622d8bab85ec9329e186ab871cb7476931b"
+  },
+  "tier2": {
+    "typeString": "Tier2Attestation(bytes32 psec_version,bytes32 model_commitment,bytes32 input_hash,bytes32 output_hash,uint8 tier,bytes buyer_pubkey)",
+    "typeHash": "0xafb9f8b743ece65704ff68889190e177e0fcf137292698ff5bf8e08661fb8253",
+    "message": {
+      "psec_version": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "model_commitment": "0x2222222222222222222222222222222222222222222222222222222222222222",
+      "input_hash": "0x05c0be0a90d620aaa058e271a2d96610aa364b818ddd48dd7db44a62b398ae4f",
+      "output_hash": "0x6885e4e69b852f544e263d63bbdb73716a2524ba0e9abc69527ad6f4cef18aba",
+      "tier": 2,
+      "buyer_pubkey": "0x02cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      "buyer_pubkey_hash": "0x7cf131d5bde38c73376a26817f61504f4bd76afff34ef6782b62c3ab5a6a90c9"
+    },
+    "structHash": "0xd4c09f842fe970079af0272a3265faadfde4ef4f872ab3ef44871cf719e8dd68",
+    "digest": "0xe5af03b7f374609499355cba8e63f0f1093793e0dc05c4e72b687ec268f68189",
+    "signature": "0xa6ecaeea5a0e80dc359c79185dba2703b7a44e5d19a9852b870457ad411f96f0025a7d428730273f91e0bf2c5345ee3033b08dc5f04013c9bb5697ee7c7a4ca11c"
+  },
+  "canonical": {
+    "input_token_ids": [
+      785,
+      6722,
+      315,
+      9625,
+      374
+    ],
+    "output_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      17689,
+      374,
+      24081,
+      13,
+      576,
+      6722,
+      315,
+      15344,
+      374,
+      21718,
+      13,
+      576,
+      6722,
+      315,
+      9856
+    ],
+    "input_hash": "0x05c0be0a90d620aaa058e271a2d96610aa364b818ddd48dd7db44a62b398ae4f",
+    "output_hash": "0x6885e4e69b852f544e263d63bbdb73716a2524ba0e9abc69527ad6f4cef18aba"
+  }
+}
