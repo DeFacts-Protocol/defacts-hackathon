@@ -1,0 +1,16 @@
+{
+  "name": "@defacts/axl-client",
+  "version": "1.0.1",
+  "type": "module",
+  "description": "DeFacts AXL transport library. Wraps the AXL HTTP API for /send + /recv (gossip) and /a2a/ (request-response) with DeFacts envelope handling.",
+  "main": "src/client.mjs",
+  "exports": {
+    ".": "./src/client.mjs",
+    "./envelope": "./src/envelope.mjs",
+    "./methods": "./src/methods.mjs",
+    "./peerid": "./src/peerid.mjs"
+  },
+  "scripts": {
+    "test": "bash test/acceptance.sh"
+  }
+}
