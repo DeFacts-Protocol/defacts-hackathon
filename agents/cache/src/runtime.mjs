@@ -138,23 +138,59 @@ export class CacheModeAgent {
       return;
     }
 
-    // Get a Tier 1 attestation from verifier-stub
-    const attestRes = await fetch(`${this.verifierUrl}/attest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ receipt, tier: 1 }),
-    });
-    if (!attestRes.ok) {
-      const errBody = await attestRes.text();
-      throw new Error(`verifier failed: ${attestRes.status}: ${errBody}`);
+    // If the buyer requested Tier 2, they've supplied their pubkey in the
+    // accept message. We sign BOTH attestations before delivering. If either
+    // signing fails, we deliver nothing (atomic both-or-nothing).
+    const wantTier2 = !!env.params.with_tier2;
+    const buyerPubkey = env.params.buyer_pubkey;
+    if (wantTier2 && !buyerPubkey) {
+      this._log('error', `accept asked for Tier 2 but no buyer_pubkey provided`);
+      this.inflight.delete(queryId);
+      return;
     }
-    const attestation = await attestRes.json();
-    this._log('attest', `Tier1 sig=${attestation.signature.slice(0, 18)}...`);
 
-    // Send deliver back to the buyer
+    let attestation, attestationTier2;
+    try {
+      // Tier 1
+      const t1Res = await fetch(`${this.verifierUrl}/attest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt, tier: 1 }),
+      });
+      if (!t1Res.ok) {
+        const errBody = await t1Res.text();
+        throw new Error(`Tier1 verifier failed: ${t1Res.status}: ${errBody}`);
+      }
+      attestation = await t1Res.json();
+      this._log('attest', `Tier1 sig=${attestation.signature.slice(0, 18)}...`);
+
+      // Tier 2 (only if requested)
+      if (wantTier2) {
+        const t2Res = await fetch(`${this.verifierUrl}/attest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ receipt, tier: 2, buyer_pubkey: buyerPubkey }),
+        });
+        if (!t2Res.ok) {
+          const errBody = await t2Res.text();
+          throw new Error(`Tier2 verifier failed: ${t2Res.status}: ${errBody}`);
+        }
+        attestationTier2 = await t2Res.json();
+        this._log('attest', `Tier2 sig=${attestationTier2.signature.slice(0, 18)}... buyer_pubkey=${buyerPubkey.slice(0, 18)}...`);
+      }
+    } catch (e) {
+      // Atomicity: if any attestation step failed, do NOT deliver a partial
+      // receipt. The buyer will time out waiting for deliver and can retry.
+      this._log('error', `attestation chain failed, no deliver: ${e.message}`);
+      this.inflight.delete(queryId);
+      return;
+    }
+
+    // Send deliver with both attestations (Tier 2 may be undefined)
     const deliverParams = { query_id: queryId, receipt, attestation };
+    if (attestationTier2) deliverParams.attestation_tier2 = attestationTier2;
     await this.axl.sendGossip(ctx.senderPubkey, METHODS.DELIVER, deliverParams, queryId);
-    this._log('deliver', `query_id=${queryId.slice(0, 10)}`);
+    this._log('deliver', `query_id=${queryId.slice(0, 10)}${attestationTier2 ? ' (with Tier 2)' : ''}`);
 
     this.inflight.delete(queryId);
   }

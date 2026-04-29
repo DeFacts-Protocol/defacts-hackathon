@@ -121,32 +121,56 @@ async function handleAccept(env, fromPeerId) {
   };
   log('prove', `receipt det_hash=${receipt.det_hash}`);
 
-  // Get a Tier 1 attestation from verifier-stub
-  const attestRes = await fetch(`${VERIFIER_URL}/attest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ receipt, tier: 1 }),
-  });
-  if (!attestRes.ok) {
-    const err = await attestRes.text();
-    throw new Error(`verifier failed: ${attestRes.status}: ${err}`);
+  // Get attestation(s). If buyer requested Tier 2, sign both atomically:
+  // either both signatures succeed, or we abort without delivering anything.
+  const wantTier2 = !!env.params.with_tier2;
+  const buyerPubkey = env.params.buyer_pubkey;
+  if (wantTier2 && !buyerPubkey) {
+    log('error', `accept asked for Tier 2 but no buyer_pubkey provided`);
+    return;
   }
-  const attestation = await attestRes.json();
-  log('attest', `got Tier1 signature ${attestation.signature.slice(0, 18)}...`);
 
-  // Send deliver back to the buyer
-  // Workaround: deliver goes via /send instead of /a2a (since a2a requires
-  // an A2A backend). The buyer's a2aMethod() call has a 30s timeout, so we
-  // need a different mechanism for the test. For now: the test polls for
-  // delivery via /recv instead of using /a2a.
-  // (Real cache/fresh agents use /a2a properly with an A2A backend.)
+  let attestation, attestationTier2;
+  try {
+    const t1Res = await fetch(`${VERIFIER_URL}/attest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receipt, tier: 1 }),
+    });
+    if (!t1Res.ok) {
+      const err = await t1Res.text();
+      throw new Error(`Tier1 verifier failed: ${t1Res.status}: ${err}`);
+    }
+    attestation = await t1Res.json();
+    log('attest', `got Tier1 signature ${attestation.signature.slice(0, 18)}...`);
+
+    if (wantTier2) {
+      const t2Res = await fetch(`${VERIFIER_URL}/attest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt, tier: 2, buyer_pubkey: buyerPubkey }),
+      });
+      if (!t2Res.ok) {
+        const err = await t2Res.text();
+        throw new Error(`Tier2 verifier failed: ${t2Res.status}: ${err}`);
+      }
+      attestationTier2 = await t2Res.json();
+      log('attest', `got Tier2 signature ${attestationTier2.signature.slice(0, 18)}... buyer=${buyerPubkey.slice(0, 18)}...`);
+    }
+  } catch (e) {
+    log('error', `attestation chain failed, no deliver: ${e.message}`);
+    return;
+  }
+
+  // Send deliver back to the buyer (with Tier 2 if requested)
   const deliverParams = {
     query_id: queryId,
     receipt,
     attestation,
   };
+  if (attestationTier2) deliverParams.attestation_tier2 = attestationTier2;
   await axl.sendGossip(ctx.senderPubkey, METHODS.DELIVER, deliverParams, queryId);
-  log('deliver', `sent deliver for query_id=${queryId.slice(0, 10)}...`);
+  log('deliver', `sent deliver for query_id=${queryId.slice(0, 10)}...${attestationTier2 ? ' (with Tier 2)' : ''}`);
 
   inflight.delete(queryId);
 }

@@ -138,6 +138,20 @@ export class ChainClient {
     return hash;
   }
 
+  /**
+   * Dispatch settleTier1 without awaiting receipt. Returns tx hash immediately
+   * after broadcast. Use this when you want to fire multiple txs back-to-back
+   * and await receipts in parallel via waitTx().
+   */
+  async settleTier1Dispatch({ tradeId, signature }) {
+    return this.walletClient.writeContract({
+      address: this.escrowAddr,
+      abi: ESCROW_ABI,
+      functionName: 'settleTier1',
+      args: [tradeId, signature],
+    });
+  }
+
   async settleTier2({ tradeId, buyerPubkey, signature }) {
     const hash = await this.walletClient.writeContract({
       address: this.escrowAddr,
@@ -147,6 +161,27 @@ export class ChainClient {
     });
     await this._waitForReceipt(hash, 'settleTier2');
     return hash;
+  }
+
+  /**
+   * Dispatch settleTier2 without awaiting receipt. Returns tx hash immediately
+   * after broadcast. Pair with waitTx() for parallel receipt waits.
+   */
+  async settleTier2Dispatch({ tradeId, buyerPubkey, signature }) {
+    return this.walletClient.writeContract({
+      address: this.escrowAddr,
+      abi: ESCROW_ABI,
+      functionName: 'settleTier2',
+      args: [tradeId, buyerPubkey, signature],
+    });
+  }
+
+  /**
+   * Wait for a previously-dispatched tx's receipt. Same retry-on-timeout
+   * semantics as the integrated settle*() methods.
+   */
+  async waitTx(hash, label = 'tx') {
+    return this._waitForReceipt(hash, label);
   }
 
   async isSettled(tradeId) {
@@ -160,18 +195,50 @@ export class ChainClient {
     return { tier1: !!result[0], tier2: !!result[1] };
   }
 
-  async _waitForReceipt(hash, label) {
-    const receipt = await this.publicClient.waitForTransactionReceipt({
-      hash,
-      timeout: this.txTimeoutMs,
-      // Galileo's null-response window is 5-30s typically, sometimes longer
-      // when the RPC is under load. Poll every 2s — frequent enough to detect
-      // mining quickly, sparse enough to not amplify RPC errors.
-      pollingInterval: 2000,
-    });
-    if (receipt.status !== 'success') {
-      throw new Error(`${label} reverted: tx=${hash} block=${receipt.blockNumber}`);
+  /**
+   * Wait for a transaction receipt with retry-on-timeout. Polls for up to
+   * txTimeoutMs per attempt, with up to maxAttempts attempts and a brief
+   * backoff between them. Total wait can reach ~9 minutes for the default
+   * settings (3 attempts × 180s + 2 × 5s backoff).
+   *
+   * Re-polling for a receipt is safe (idempotent) — unlike retrying a
+   * broadcast, which is not. The tx hash is stable; we're just asking the
+   * RPC "is it mined yet?" multiple times.
+   */
+  async _waitForReceipt(hash, label, maxAttempts = 3) {
+    let lastError;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const receipt = await this.publicClient.waitForTransactionReceipt({
+          hash,
+          timeout: this.txTimeoutMs,
+          // Galileo's null-response window is 5-30s typically, sometimes
+          // longer when the RPC is under load. Poll every 2s — frequent
+          // enough to detect mining quickly, sparse enough to not amplify
+          // RPC errors.
+          pollingInterval: 2000,
+        });
+        if (receipt.status !== 'success') {
+          throw new Error(`${label} reverted: tx=${hash} block=${receipt.blockNumber}`);
+        }
+        return receipt;
+      } catch (e) {
+        lastError = e;
+        // Only retry on "receipt not found" timeouts. Reverts and other
+        // errors are terminal.
+        const msg = String(e.message || e);
+        const isTransient = msg.includes('could not be found') ||
+                            msg.includes('not be processed on a block') ||
+                            msg.includes('Timed out');
+        if (!isTransient || attempt === maxAttempts) throw e;
+        console.log(`[chain] ${label} receipt poll attempt ${attempt}/${maxAttempts} timed out, retrying in 5s... (tx=${hash})`);
+        await sleep(5000);
+      }
     }
-    return receipt;
+    throw lastError;
   }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }

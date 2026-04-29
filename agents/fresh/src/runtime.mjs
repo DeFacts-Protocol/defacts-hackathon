@@ -158,27 +158,56 @@ export class FreshModeAgent {
       return;
     }
 
-    // Get a Tier 1 attestation
-    const attestRes = await fetch(`${this.verifierUrl}/attest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ receipt: ctx.receipt, tier: 1 }),
-    });
-    if (!attestRes.ok) {
-      const errBody = await attestRes.text();
-      throw new Error(`verifier failed: ${attestRes.status}: ${errBody}`);
+    // If buyer requested Tier 2, get both attestations atomically
+    const wantTier2 = !!env.params.with_tier2;
+    const buyerPubkey = env.params.buyer_pubkey;
+    if (wantTier2 && !buyerPubkey) {
+      this._log('error', `accept asked for Tier 2 but no buyer_pubkey provided`);
+      this.inflight.delete(queryId);
+      return;
     }
-    const attestation = await attestRes.json();
-    this._log('attest', `Tier1 sig=${attestation.signature.slice(0, 18)}...`);
 
-    // Deliver
+    let attestation, attestationTier2;
+    try {
+      const t1Res = await fetch(`${this.verifierUrl}/attest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt: ctx.receipt, tier: 1 }),
+      });
+      if (!t1Res.ok) {
+        const errBody = await t1Res.text();
+        throw new Error(`Tier1 verifier failed: ${t1Res.status}: ${errBody}`);
+      }
+      attestation = await t1Res.json();
+      this._log('attest', `Tier1 sig=${attestation.signature.slice(0, 18)}...`);
+
+      if (wantTier2) {
+        const t2Res = await fetch(`${this.verifierUrl}/attest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ receipt: ctx.receipt, tier: 2, buyer_pubkey: buyerPubkey }),
+        });
+        if (!t2Res.ok) {
+          const errBody = await t2Res.text();
+          throw new Error(`Tier2 verifier failed: ${t2Res.status}: ${errBody}`);
+        }
+        attestationTier2 = await t2Res.json();
+        this._log('attest', `Tier2 sig=${attestationTier2.signature.slice(0, 18)}... buyer_pubkey=${buyerPubkey.slice(0, 18)}...`);
+      }
+    } catch (e) {
+      this._log('error', `attestation chain failed, no deliver: ${e.message}`);
+      this.inflight.delete(queryId);
+      return;
+    }
+
     const deliverParams = {
       query_id: queryId,
       receipt: ctx.receipt,
       attestation,
     };
+    if (attestationTier2) deliverParams.attestation_tier2 = attestationTier2;
     await this.axl.sendGossip(ctx.senderPubkey, METHODS.DELIVER, deliverParams, queryId);
-    this._log('deliver', `query_id=${queryId.slice(0, 10)}`);
+    this._log('deliver', `query_id=${queryId.slice(0, 10)}${attestationTier2 ? ' (with Tier 2)' : ''}`);
 
     this.inflight.delete(queryId);
   }
