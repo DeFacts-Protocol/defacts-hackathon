@@ -145,7 +145,7 @@ export class UserRuntime {
         ttlSeconds: env.params.ttl_seconds,
         envelope: env,
       });
-      this._log('bid', `agent_id=${env.params.agent_id} price=${env.params.price_wei}`);
+      this._log('bid', `agent_id=${env.params.agent_id} price=${env.params.price_wei} det_hash=${(env.params.receipt_cid || '').slice(0, 18)}...`);
     }, { intervalMs: 100 });
 
     await sleep(this.bidWindowMs);
@@ -155,10 +155,40 @@ export class UserRuntime {
       throw new Error(`queryMarket: no bids received within ${this.bidWindowMs}ms`);
     }
 
-    // Step 3: pick winner (lowest in budget)
-    const inBudget = bids.filter((b) => BigInt(b.priceWei) <= BigInt(args.budgetWei));
+    // Cross-supplier consensus check.
+    //
+    // The marketplace's central correctness claim is that independent
+    // suppliers, given the same prompt, produce the same det_hash. Bidders
+    // commit to a det_hash (as receipt_cid) at bid time, before the buyer
+    // picks any of them. We compute the modal hash and report agreement so
+    // the consensus moment is visible in the runtime log.
+    //
+    // (PSEC determinism + canonical model_commitment + canonical input
+    // tokens → identical output tokens → identical det_hash. Any divergence
+    // here means at least one supplier ran a non-conformant inference.)
+    const hashCounts = new Map();
+    for (const b of bids) {
+      const h = b.receiptCid;
+      hashCounts.set(h, (hashCounts.get(h) || 0) + 1);
+    }
+    const sortedHashes = [...hashCounts.entries()].sort((a, b) => b[1] - a[1]);
+    const [modalHash, modalCount] = sortedHashes[0];
+    if (sortedHashes.length === 1) {
+      this._log('consensus', `${modalCount}/${bids.length} suppliers agree on det_hash=${modalHash}`);
+    } else {
+      this._log('consensus', `DIVERGENCE: ${modalCount}/${bids.length} on ${modalHash}, ${bids.length - modalCount} other(s)`);
+      for (const [h, n] of sortedHashes.slice(1)) {
+        this._log('consensus', `  also: ${n}/${bids.length} on ${h}`);
+      }
+    }
+
+    // Step 3: pick winner (lowest in budget, only among modal-hash bidders).
+    // If a supplier disagreed on the hash, we don't trust them as a counterparty
+    // for this trade. Lowest price among the consensus group wins.
+    const consensusBids = bids.filter((b) => b.receiptCid === modalHash);
+    const inBudget = consensusBids.filter((b) => BigInt(b.priceWei) <= BigInt(args.budgetWei));
     if (inBudget.length === 0) {
-      throw new Error(`queryMarket: no bids within budget ${args.budgetWei}, lowest was ${bids[0].priceWei}`);
+      throw new Error(`queryMarket: no consensus bids within budget ${args.budgetWei}`);
     }
     inBudget.sort((x, y) => (BigInt(x.priceWei) < BigInt(y.priceWei) ? -1 : 1));
     const winner = inBudget[0];
