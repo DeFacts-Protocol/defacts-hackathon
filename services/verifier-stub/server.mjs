@@ -1,7 +1,7 @@
 /**
  * DeFacts verifier-stub
  *
- * Port 7002. Endpoints: POST /attest, GET /health, GET /address.
+ * Endpoints: POST /attest, GET /health, GET /address.
  *
  * Flow for /attest:
  *   1. Receive a receipt from a buyer or agent.
@@ -15,11 +15,20 @@
  * verifier signed the attestation.
  *
  * The verifier-stub holds a secp256k1 private key in VERIFIER_PRIVKEY env var.
- * Its address gets registered in VerifierRegistry under proof_format=stub-v1
- * via `cast send VerifierRegistry register("stub-v1", <verifier_address>)`.
+ * Its address gets registered in VerifierRegistry under PROOF_FORMAT.
  *
- * IMPORTANT: this verifier ONLY validates proof_format=stub-v1. The pd19-v1
- * verifier is a separate service (Day 4) with its own key and registration.
+ * Configuration (via env vars):
+ *   PORT              listen port (default 7002)
+ *   PROOF_FORMAT      proof format this instance handles (default 'stub-v1')
+ *                     Run a second instance with PROOF_FORMAT=pd19-v1 PORT=7012
+ *                     and a different VERIFIER_PRIVKEY to serve PD19 attestations.
+ *   VERIFIER_PRIVKEY  required: 0x-prefixed 32-byte secp256k1 private key
+ *   PROVER_ENDPOINT   prover service URL (default localhost:7001)
+ *   ESCROW_ADDR       Escrow contract address (used in EIP-712 domain)
+ *   CHAIN_ID          chain id for EIP-712 domain (default 16602 = Galileo)
+ *
+ * One binary, multiple proof formats — the on-chain VerifierRegistry routes
+ * receipts to the correct verifier address by proof_format string.
  */
 
 import express from 'express';
@@ -30,7 +39,7 @@ const app = express();
 app.use(express.json({ limit: '1mb' }));
 
 const PORT = parseInt(process.env.PORT || '7002');
-const PROOF_FORMAT = 'stub-v1';
+const PROOF_FORMAT = process.env.PROOF_FORMAT || 'stub-v1';
 const PROVER_ENDPOINT = process.env.PROVER_ENDPOINT || 'http://localhost:7001';
 const ESCROW_ADDR = (process.env.ESCROW_ADDR || '0x0000000000000000000000000000000000000001');
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '16602');

@@ -1,13 +1,21 @@
 /**
  * DeFacts prover-stub
- * Port 7001. Endpoints: POST /prove, POST /verify, GET /health.
+ *
+ * Endpoints: POST /prove, POST /verify, GET /health.
  *
  * det_hash := sha256( psec_version || model_commitment || u32be(input_ids) || u32be(output_ids) )
- * proof_format: "stub-v1" — deliberately different from real PSEC.
  *
- * The proof_format tag means the on-chain VerifierRegistry routes stub
- * receipts to stub.verifier.defacts.eth, never to pd19.verifier.defacts.eth.
- * Stubs and PD19 receipts do not collide.
+ * Configuration (via env vars):
+ *   PORT          listen port (default 7001)
+ *   PROOF_FORMAT  proof format this instance produces/verifies (default 'stub-v1')
+ *                 Run a second instance with PROOF_FORMAT=pd19-v1 PORT=7011 to
+ *                 serve PD19 receipts. The hash function and canned outputs are
+ *                 identical between formats — only the proof_format tag differs,
+ *                 which routes to a different on-chain verifier address.
+ *
+ * The proof_format tag means the on-chain VerifierRegistry routes stub-v1
+ * receipts to stub.verifier.defacts.eth and pd19-v1 receipts to
+ * pd19.verifier.defacts.eth. Stubs and PD19 receipts do not collide on chain.
  */
 
 import express from 'express';
@@ -16,8 +24,8 @@ import { createHash } from 'crypto';
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
-const PORT = 7001;
-const PROOF_FORMAT = 'stub-v1';
+const PORT = parseInt(process.env.PORT || '7001');
+const PROOF_FORMAT = process.env.PROOF_FORMAT || 'stub-v1';
 
 // ─── Canonical canned outputs (Qwen 2.5 14B Instruct, BF16, greedy) ──────
 // Keys: stringified input_token_ids (CSV). Values: 20-token greedy continuation.
