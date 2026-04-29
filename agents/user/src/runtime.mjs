@@ -46,6 +46,17 @@ export class UserRuntime {
     deliveryTimeoutMs = 30000,
     receiptOutputDir,           // optional: where to write receipt JSON; defaults
                                 //   to <cwd>/test/output/ if undefined
+    ensUpdater,                 // optional: EnsUpdater instance. When set, every
+                                //   successful settle fires a best-effort ENS
+                                //   text-record update on Sepolia. Failures are
+                                //   logged but don't fail the trade.
+    agentSubnameMap = {         // optional: maps marketplace agent_id to ENS
+      'cache-001':       'l4',  //   subname under defacts.eth. Used for
+      'fresh-001':       'l40s',//   per-agent ENS records.
+      'fresh-002':       'h100',
+      'mock-supplier-1': 'l4',
+    },
+    chainExplorerBase = 'https://chainscan-galileo.0g.ai',
   }) {
     if (!axlApiBase)  throw new Error('axlApiBase required');
     if (!escrowAddr)  throw new Error('escrowAddr required');
@@ -60,6 +71,9 @@ export class UserRuntime {
     this.deliveryTransport = deliveryTransport;
     this.deliveryTimeoutMs = deliveryTimeoutMs;
     this.receiptOutputDir = receiptOutputDir;
+    this.ensUpdater = ensUpdater || null;
+    this.agentSubnameMap = agentSubnameMap;
+    this.chainExplorerBase = chainExplorerBase;
 
     // Derive buyer's secp256k1 identity from the wallet privkey.
     // viem's privateKeyToAccount exposes both compressed (33 bytes) and
@@ -282,6 +296,33 @@ export class UserRuntime {
         winner,
       });
       this._log('receipt', `wrote ${receiptPath}`);
+    }
+
+    // Step 8: best-effort ENS update (Sepolia).
+    //
+    // The marketplace settles on Galileo; reputation surfaces on Sepolia ENS.
+    // Updates are fire-and-forget — Sepolia could be down, the privkey
+    // could be missing, or the agent could lack a subname mapping. None of
+    // those should fail the trade. Galileo is the source of truth.
+    if (this.ensUpdater) {
+      const ensSubname = this.agentSubnameMap[winner.agentId] || null;
+      this.ensUpdater.recordTrade({
+        tradeId,
+        agentId: ensSubname,                      // pass the subname, not the raw agent_id
+        attestationHash: r.det_hash,
+        openTradeTx,
+        settleTier1Tx,
+        settleTier2Tx,
+        chainExplorerBase: this.chainExplorerBase,
+      }).then((res) => {
+        if (res.ok) {
+          this._log('ens', `recorded trade on Sepolia (subname=${ensSubname || 'none'})`);
+        } else {
+          this._log('ens', `update failed (non-fatal): ${res.error}`);
+        }
+      }).catch((e) => {
+        this._log('ens', `update threw (non-fatal): ${e.message}`);
+      });
     }
 
     return {

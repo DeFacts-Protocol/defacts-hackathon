@@ -1,0 +1,16 @@
+{
+  "name": "@defacts/ens-updater",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ENS text-record + subname helper for DeFacts marketplace.",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "bin": {
+    "defacts-ens": "./src/cli.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
+  }
+}

@@ -6,6 +6,13 @@
  * resolution, and on-chain settlement under competitive bidding.
  *
  * Run by script/end-of-day-3.sh after both agents are ready.
+ *
+ * ENV:
+ *   ENABLE_ENS=1               — opt-in to Sepolia ENS record updates after
+ *                                each successful settle. Off by default.
+ *   ENS_OWNER_PRIVKEY=0x...    — required when ENABLE_ENS=1. Privkey of the
+ *                                wallet that owns defacts.eth on Sepolia.
+ *   SEPOLIA_RPC_URL=...        — optional, defaults to publicnode.
  */
 
 import { UserRuntime } from '../agents/user/src/runtime.mjs';
@@ -28,6 +35,25 @@ function fail(label, detail) {
   process.exit(1);
 }
 
+// ─── Optional: instantiate EnsUpdater ──────────────────────────────────
+
+let ensUpdater = null;
+if (process.env.ENABLE_ENS === '1') {
+  if (!process.env.ENS_OWNER_PRIVKEY) {
+    console.error('FAIL: ENABLE_ENS=1 but ENS_OWNER_PRIVKEY not set');
+    process.exit(1);
+  }
+  // Dynamic import — only load EnsUpdater when actually needed, so the
+  // existing acceptance flow (without ENS) doesn't pull in viem just for
+  // the ENS module.
+  const { EnsUpdater } = await import('../services/ens-updater/src/index.mjs');
+  ensUpdater = new EnsUpdater({
+    privateKey: process.env.ENS_OWNER_PRIVKEY,
+    rpcUrl: process.env.SEPOLIA_RPC_URL,
+  });
+  console.log(`[ens] enabled — Sepolia owner=${ensUpdater.account.address}`);
+}
+
 // We need access to the bid list, which the runtime doesn't expose in its
 // return value. We monkey-patch the runtime to capture all bids before the
 // winner is picked. This is test-only; production runtimes don't need to.
@@ -46,6 +72,7 @@ const user = new InstrumentedUserRuntime({
   proofFormat: 'stub-v1',
   bidWindowMs: 4000,         // wider window — fresh-agent calls prover, slower
   deliveryTransport: 'send',
+  ensUpdater,                // null when ENABLE_ENS != '1'
 });
 
 // Intercept _log to capture bid arrivals
@@ -152,5 +179,73 @@ console.log('=== On-chain settlement ===');
 console.log(`  Trade ID:    ${result.tradeId}`);
 console.log(`  openTrade:   https://chainscan-galileo.0g.ai/tx/${result.openTradeTx}`);
 console.log(`  settleTier1: https://chainscan-galileo.0g.ai/tx/${result.settleTier1Tx}`);
+console.log('');
+
+// ─── If ENS enabled: wait for Sepolia updates to land ──────────────────
+
+if (ensUpdater) {
+  console.log('=== ENS update (best-effort, Sepolia) ===');
+  console.log('  Waiting up to 90s for Sepolia confirmations to propagate...');
+  console.log('  (parent: 3 records + winner subname: 5 records = up to 8 sequential txs)');
+  console.log('');
+
+  // Stream the trade hash into ENS by deriving the expected subname
+  const subnameMap = {
+    'cache-001':       'l4',
+    'fresh-001':       'l40s',
+    'fresh-002':       'h100',
+    'mock-supplier-1': 'l4',
+  };
+  const winnerSubname = subnameMap[result.winningBid.agentId];
+  if (!winnerSubname) {
+    console.log(`  ⚠ no subname mapping for ${result.winningBid.agentId} — skipping ENS check`);
+  } else {
+    const fullName = `${winnerSubname}.defacts.eth`;
+    const expectedTradeId = result.tradeId;
+
+    // Poll up to 90s, every 5s
+    let observed = null;
+    const startMs = Date.now();
+    while (Date.now() - startMs < 90_000) {
+      try {
+        observed = await ensUpdater.getText(fullName, 'defacts.last_trade_id');
+        if (observed === expectedTradeId) break;
+      } catch (e) {
+        // Ignore read errors during polling
+      }
+      await new Promise(r => setTimeout(r, 5000));
+    }
+
+    const elapsed = Math.round((Date.now() - startMs) / 1000);
+    if (observed === expectedTradeId) {
+      pass(`ENS ${fullName}/defacts.last_trade_id updated after ${elapsed}s`);
+
+      // Read all the related records to confirm full update
+      const settleTx     = await ensUpdater.getText(fullName, 'defacts.last_settlement_tx');
+      const lastTier     = await ensUpdater.getText(fullName, 'defacts.last_tier_settled');
+      const lastAttest   = await ensUpdater.getText(fullName, 'defacts.last_attestation');
+      const parentLatest = await ensUpdater.getText('defacts.eth', 'defacts.latest_attestation');
+
+      pass(`ENS ${fullName} has settle tx URL`);
+      pass(`ENS ${fullName} has last_tier=${lastTier}`);
+      pass(`ENS ${fullName} has last_attestation`);
+      pass(`ENS defacts.eth/defacts.latest_attestation populated`);
+
+      console.log('');
+      console.log('=== ENS records updated on Sepolia ===');
+      console.log(`  ${fullName}/defacts.last_trade_id        = ${observed.slice(0, 22)}...`);
+      console.log(`  ${fullName}/defacts.last_settlement_tx   = ${settleTx.slice(0, 60)}...`);
+      console.log(`  ${fullName}/defacts.last_tier_settled    = ${lastTier}`);
+      console.log(`  ${fullName}/defacts.last_attestation     = ${lastAttest.slice(0, 22)}...`);
+      console.log(`  defacts.eth/defacts.latest_attestation   = ${parentLatest.slice(0, 22)}...`);
+      console.log('');
+      console.log(`  View live:  https://app.ens.domains/${fullName}  (Sepolia)`);
+    } else {
+      fail(`ENS update did not propagate within 90s`,
+        `observed: "${observed}" expected: "${expectedTradeId}"`);
+    }
+  }
+}
+
 console.log('');
 console.log(`All ${testNum} tests passed.`);
