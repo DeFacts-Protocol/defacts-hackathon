@@ -1,0 +1,15 @@
+{
+  "name": "threshold-stub",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DeFacts threshold-stub. ECIES-wraps full receipts to a buyer's pubkey after a Tier2 payment is confirmed. Unwrap is provided as a demo convenience; real buyers decrypt client-side.",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "bash test/acceptance.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "eciesjs": "^0.4.13"
+  }
+}
