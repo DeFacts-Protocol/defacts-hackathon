@@ -17,3 +17,4 @@ gate4-axl/axl/
 services/*/.env
 packages/*/node_modules/
 agents/*/node_modules/
+agents/user/test/output/
