@@ -2,7 +2,7 @@
 .env
 
 # Foundry
-cache/
+/cache/
 out/
 broadcast/
 

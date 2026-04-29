@@ -1,0 +1,17 @@
+{
+  "name": "@defacts/agent-cache",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DeFacts cache-mode supplier agent: bids on cache hits, delivers pre-computed receipts.",
+  "main": "src/runtime.mjs",
+  "exports": {
+    ".": "./src/runtime.mjs"
+  },
+  "scripts": {
+    "test": "bash test/acceptance.sh",
+    "start": "node src/main.mjs"
+  },
+  "dependencies": {
+    "@defacts/axl-client": "file:../../packages/axl-client"
+  }
+}

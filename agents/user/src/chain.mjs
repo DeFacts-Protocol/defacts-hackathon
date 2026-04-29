@@ -84,7 +84,7 @@ const ESCROW_ABI = [
 ];
 
 export class ChainClient {
-  constructor({ escrowAddr, rpcUrl, privateKey, txTimeoutMs = 60_000 }) {
+  constructor({ escrowAddr, rpcUrl, privateKey, txTimeoutMs = 180_000 }) {
     if (!escrowAddr) throw new Error('escrowAddr required');
     if (!rpcUrl)     throw new Error('rpcUrl required');
     if (!privateKey) throw new Error('privateKey required');
@@ -97,7 +97,10 @@ export class ChainClient {
     const chainOverride = rpcUrl ? { ...galileo, rpcUrls: { default: { http: [rpcUrl] }, public: { http: [rpcUrl] } } } : galileo;
 
     const account = privateKeyToAccount(privateKey.startsWith('0x') ? privateKey : '0x' + privateKey);
-    const transport = http(rpcUrl);
+    // Galileo's RPC sometimes errors transiently; retry individual HTTP calls
+    // up to 5 times with 1s spacing before giving up. This is in addition to
+    // viem's outer polling loop in waitForTransactionReceipt.
+    const transport = http(rpcUrl, { retryCount: 5, retryDelay: 1000 });
 
     this.walletClient = createWalletClient({ account, transport, chain: chainOverride });
     this.publicClient = createPublicClient({ transport, chain: chainOverride });
@@ -161,8 +164,10 @@ export class ChainClient {
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
       timeout: this.txTimeoutMs,
-      // Poll every 1s — Galileo's null-response window is 5-30s typically
-      pollingInterval: 1000,
+      // Galileo's null-response window is 5-30s typically, sometimes longer
+      // when the RPC is under load. Poll every 2s — frequent enough to detect
+      // mining quickly, sparse enough to not amplify RPC errors.
+      pollingInterval: 2000,
     });
     if (receipt.status !== 'success') {
       throw new Error(`${label} reverted: tx=${hash} block=${receipt.blockNumber}`);
