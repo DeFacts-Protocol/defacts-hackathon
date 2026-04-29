@@ -1,0 +1,14 @@
+{
+  "name": "prover-stub",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DeFacts prover-stub. Returns canonical canned outputs with deterministic stub hashes for development and demo fallback.",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "bash test/acceptance.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
