@@ -1,0 +1,15 @@
+{
+  "name": "verifier-stub",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DeFacts verifier-stub. Validates stub-v1 receipts via prover-stub then signs EIP-712 Tier1/Tier2 attestations that Escrow.sol can recover.",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "bash test/acceptance.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "viem": "^2.21.0"
+  }
+}
