@@ -23,9 +23,7 @@ The protocol is governed by **PSEC** (Portable Semantic Execution Contract) — 
 
 ## Project scope
 
-This repository was built from scratch starting **April 27, 2026** for the ETHGlobal Open Agents 2026 hackathon. The code in this repository is the hackathon project: marketplace protocol, agent runtimes, settlement contracts, ENS integration, PSEC specification, and adapters.
-
-PD19, used here as one production implementation of PSEC, is preexisting external infrastructure developed by Paradatum Inc. PD19 itself is not part of this hackathon submission; the submission is the open marketplace and standard that PD19 (and any other PSEC-compliant prover) can plug into.
+The DeFacts repository was built from scratch for ETHGlobal Open Agents 2026 starting April 27, 2026. The marketplace is prover-agnostic — any PSEC-compliant prover can join. Our reference integration uses PD19, Paradatum's high-performance ZKP prover, called over HTTP via the included adapter.
 
 ## Architecture
 
