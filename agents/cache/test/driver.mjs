@@ -7,6 +7,7 @@
  */
 
 import { UserRuntime } from '../../user/src/runtime.mjs';
+import { readFile } from 'node:fs/promises';
 
 const NODE_A_API     = process.env.NODE_A_API;
 const ESCROW_ADDR    = process.env.ESCROW_ADDR;
@@ -70,10 +71,17 @@ else fail(`unexpected price ${result.winningBid?.priceWei}`);
 
 // ─── Verify the receipt is the cached one ──────────────────────────────
 
-if (result.deliver?.receipt?.det_hash === '0x6b64b51afe77ff67bb4336117f89237090ff9ba41d7a2c2ad2c0646ef8b44336') {
-  pass('delivered receipt has canonical France det_hash (cache hit confirmed)');
+const fixturePath = new URL('../fixtures/france.json', import.meta.url);
+const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
+const expectedDetHash = fixture.det_hash;
+
+if (result.deliver?.receipt?.det_hash === expectedDetHash) {
+  pass(`delivered receipt matches cache fixture (${expectedDetHash.slice(0, 18)}...)`);
 } else {
-  fail('det_hash mismatch — cache may have served wrong receipt', result.deliver?.receipt?.det_hash);
+  fail(
+    'det_hash mismatch — cache served different receipt than the fixture',
+    `expected=${expectedDetHash} actual=${result.deliver?.receipt?.det_hash}`
+  );
 }
 
 if (Array.isArray(result.deliver?.receipt?.input_token_ids) &&
