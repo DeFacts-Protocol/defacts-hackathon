@@ -9,7 +9,7 @@ ADAPTER_DIR="$(pwd)"
 
 # ─── Required env ──────────────────────────────────────────────────────────
 
-PD19_INFER_URL="${PD19_INFER_URL:-https://eyv0x8k3nbce9a-7860.proxy.runpod.net/infer}"
+PD19_INFER_URL="${PD19_INFER_URL:-http://localhost:8000/infer}"
 ADAPTER_PORT="${ADAPTER_PORT:-7011}"
 PD19_BACKEND_LABEL="${PD19_BACKEND_LABEL:-l4}"
 

@@ -21,7 +21,7 @@
 
 ## Gate 3: ENS — GREEN (Apr 27)
 - Name: defacts.eth on Sepolia
-- Owner: 0xEfcD46557D14B654DF35d77be9fd96B04B520f0B (personal wallet)
+- Owner: 0xEfcD46557D14B654DF35d77be9fd96B04B520f0B
 - Expiry: April 27, 2027
 - Decision: Option A (keep on personal wallet, sign subname txs from there)
 
