@@ -1,0 +1,15 @@
+{
+  "name": "pd19-adapter",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Translates between marketplace /prove schema and live PD19 /infer endpoint on RunPod",
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "bash test/acceptance.sh"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
