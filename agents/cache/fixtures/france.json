@@ -1,10 +1,17 @@
 {
   "_prompt_label": "The capital of France is",
+  "_captured_from": "live L4 via pd19-adapter on 7011",
   "psec_version": "0x1111111111111111111111111111111111111111111111111111111111111111",
   "model_commitment": "0x2222222222222222222222222222222222222222222222222222222222222222",
-  "input_token_ids": [785, 6722, 315, 9625, 374],
-  "output_token_ids": [12095, 13, 576, 6722, 315, 17689, 374, 24081, 13, 576, 6722, 315, 15344, 374, 21718, 13, 576, 6722, 315, 9856],
-  "det_hash": "0x6b64b51afe77ff67bb4336117f89237090ff9ba41d7a2c2ad2c0646ef8b44336",
-  "proof_blob": "0x6b64b51afe77ff67bb4336117f89237090ff9ba41d7a2c2ad2c0646ef8b44336",
-  "proof_format": "stub-v1"
+  "input_token_ids": [
+    785,
+    6722,
+    315,
+    9625,
+    374
+  ],
+  "output_token_ids": [],
+  "det_hash": "0x7890ca4cb74e422e000000000000000000000000000000000000000000000000",
+  "proof_blob": "0x7890ca4cb74e422e000000000000000000000000000000000000000000000000",
+  "proof_format": "pd19-v1"
 }

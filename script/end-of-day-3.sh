@@ -174,7 +174,7 @@ echo "node-c pubkey: ${PUBKEY_C:0:16}..."
 echo "─── starting cache-mode-agent on node-b ───"
 cd "$REPO/agents/cache"
 AXL_API_BASE="$NODE_B_API" \
-VERIFIER_URL="http://localhost:7002" \
+VERIFIER_URL="${CACHE_VERIFIER_URL:-http://localhost:7002}" \
 AGENT_ID="cache-001" \
 PRICE_WEI="50000000000000" \
 FIXTURES_DIR="$REPO/agents/cache/fixtures" \
@@ -197,8 +197,8 @@ echo "cache-agent ready on node-b (pid $CACHE_PID)"
 echo "─── starting fresh-mode-agent on node-c ───"
 cd "$REPO/agents/fresh"
 AXL_API_BASE="$NODE_C_API" \
-PROVER_ENDPOINT="http://localhost:7001" \
-VERIFIER_URL="http://localhost:7002" \
+PROVER_ENDPOINT="${PROVER_ENDPOINT:-http://localhost:7001}" \
+VERIFIER_URL="${FRESH_VERIFIER_URL:-http://localhost:7002}" \
 AGENT_ID="fresh-001" \
 PRICE_WEI="200000000000000" \
 node src/main.mjs > "$LOGS/fresh-agent.log" 2>&1 &

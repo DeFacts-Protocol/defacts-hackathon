@@ -148,6 +148,48 @@ async function handleProve(body) {
   };
 }
 
+// ─── /verify handler ───────────────────────────────────────────────────
+//
+// Called by pd19-v1 verifier-stub during the attestation chain. Receives a
+// receipt; recomputes the canonical PD19 hash by calling live PD19; compares
+// to the receipt's claimed det_hash. This is the verification oracle that
+// makes the marketplace's Tier1 attestation real for pd19-v1 receipts.
+async function handleVerify(body) {
+  const { input_token_ids, max_output_tokens, det_hash, decoding } = body;
+
+  if (!Array.isArray(input_token_ids)) {
+    throw new Error('input_token_ids must be an array');
+  }
+  if (decoding && decoding !== 'greedy') {
+    throw new Error(`unsupported decoding: ${decoding} (only 'greedy' supported)`);
+  }
+  if (typeof det_hash !== 'string' || !det_hash.startsWith('0x')) {
+    throw new Error('det_hash must be 0x-prefixed hex string');
+  }
+
+  const prompt = lookupPrompt(input_token_ids);
+  if (!prompt) {
+    throw new Error(
+      `unknown input_token_ids sequence [${input_token_ids.slice(0, 5).join(',')}...]`
+    );
+  }
+
+  const { result: pd19Result } = await callPD19(prompt, max_output_tokens || 20);
+  if (!pd19Result.hash) {
+    throw new Error(`PD19 response missing 'hash' field`);
+  }
+
+  const recomputed = padHashTo32Bytes(pd19Result.hash);
+  const valid = recomputed.toLowerCase() === det_hash.toLowerCase();
+
+  return {
+    valid,
+    method: PROOF_FORMAT,
+    recomputed_hash: recomputed,
+    received_hash: det_hash,
+  };
+}
+
 // ─── HTTP server ───────────────────────────────────────────────────────────
 
 function readBody(req) {
@@ -196,6 +238,18 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       console.error(`[adapter ${PD19_BACKEND_LABEL}] /prove failed:`, e.message);
       return send(res, 400, { error: e.message });
+    }
+  }
+
+  // PD19 verification oracle (used by pd19-v1 verifier-stub)
+  if (url.pathname === '/verify' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const result = await handleVerify(body);
+      return send(res, 200, result);
+    } catch (e) {
+      console.error(`[adapter ${PD19_BACKEND_LABEL}] /verify failed:`, e.message);
+      return send(res, 400, { valid: false, error: e.message });
     }
   }
 
