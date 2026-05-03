@@ -98,6 +98,16 @@ PROVER_ENDPOINT=http://localhost:7011 \
 
 Built from scratch for ETHGlobal Open Agents 2026, April 27 – May 3, 2026.
 
+## Prior work and attributions
+
+A few components of this submission build on pre-existing work, disclosed here for transparency:
+
+- **`docs/dsec-verify.c`** — the PSEC reference CPU verifier originated as internal tooling at Paradatum Inc. (the "PD" / "PD19" symbol prefixes throughout the file are vestigial namespacing). It has been re-licensed MIT and is published here as the DeFacts PSEC reference verifier. The math contract it implements is open and may be implemented by anyone.
+- **PD19** — referenced as one production PSEC implementation. PD19 itself is proprietary infrastructure maintained separately by Paradatum Inc.; this repository contains only the HTTP adapter that calls it (`services/pd19-adapter/`).
+- **Standard libraries and patterns** — Foundry / forge-std (Solidity testing), OpenZeppelin (contract primitives), viem (Ethereum RPC client), and standard Node.js / Python tooling are used as you'd expect; none are forked or modified.
+
+The DeFacts marketplace contracts, the PSEC specification surface, the AXL agent runtimes, the ENS reputation layer, and all integration glue between these layers were built from scratch for ETHGlobal Open Agents 2026.
+
 ## License
 
 MIT.
