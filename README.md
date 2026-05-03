@@ -33,7 +33,7 @@ The receipts settled and recorded are EIP-712 typed structs (`psec_version`, `mo
 
 PSEC is published, MIT-licensed, prover-agnostic. Any prover that produces the canonical PSEC output for a given input can join the marketplace.
 
-📄 **[PSEC verification reference](./docs/psec-verification.html)** — the published artifacts (model weights, accumulation descriptor, canonical LUTs, RoPE table, single-file C verifier) that any PSEC implementation must produce, with a working CPU verifier replay of the canonical France query.
+📄 **[PSEC verification reference](https://defacts-protocol.github.io/defacts-hackathon/psec-verification.html)** — the published artifacts (model weights, accumulation descriptor, canonical LUTs, RoPE table, single-file C verifier) that any PSEC implementation must produce, with a working CPU verifier replay of the canonical France query.
 
 ## What's deployed
 
