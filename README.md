@@ -33,6 +33,8 @@ The receipts settled and recorded are EIP-712 typed structs (`psec_version`, `mo
 
 PSEC is published, MIT-licensed, prover-agnostic. Any prover that produces the canonical PSEC output for a given input can join the marketplace.
 
+📄 **[PSEC verification reference](./docs/psec-verification.html)** — the published artifacts (model weights, accumulation descriptor, canonical LUTs, RoPE table, single-file C verifier) that any PSEC implementation must produce, with a working CPU verifier replay of the canonical France query.
+
 ## What's deployed
 
 **0G Galileo (chain id 16602):**
@@ -83,6 +85,7 @@ PROVER_ENDPOINT=http://localhost:7011 \
 - `services/verifier-stub/`, `services/prover-stub/` — local test infrastructure
 - `script/test-ens-integration.sh` — full marketplace + settlement + reputation acceptance
 - `gate4-axl/` — AXL transport integration
+- `docs/psec-verification.html` — PSEC v1 reference artifacts spec + CPU verifier output
 
 ## Hackathon prize tracks
 
