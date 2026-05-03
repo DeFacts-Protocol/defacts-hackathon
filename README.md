@@ -16,6 +16,7 @@
 > 15 acceptance tests, real Galileo settlement, real Sepolia ENS records.
 
 🎥 **[Watch the project walkthrough on Loom](https://www.loom.com/share/8a695827b5584857bf979cb28a72b9ca?t=1)** — DeFacts explained, layer by layer
+
 📟 **[Watch the end-to-end script run on Loom](https://www.loom.com/share/aca691859f7544168ea9d4f102720c5e?t=1)** — `bash script/test-ens-integration.sh`, single command, all 15 tests passing live
 
 ---
