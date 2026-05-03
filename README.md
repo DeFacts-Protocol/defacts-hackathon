@@ -18,10 +18,6 @@
 🎥 **[Watch the project walkthrough on Loom](https://www.loom.com/share/8a695827b5584857bf979cb28a72b9ca?t=1)** — DeFacts explained, layer by layer
 📟 **[Watch the end-to-end script run on Loom](https://www.loom.com/share/aca691859f7544168ea9d4f102720c5e?t=1)** — `bash script/test-ens-integration.sh`, single command, all 15 tests passing live
 
-🎥 **[Watch the 3-minute demo on Loom](https://www.loom.com/share/8a695827b5584857bf979cb28a72b9ca?t=1)**
-
-🎥 **[Watch the 3-minute demo on Loom](https://www.loom.com/share/8a695827b5584857bf979cb28a72b9ca)**
-
 ---
 
 ## Three layers, three chains, one receipt
@@ -54,7 +50,7 @@ PSEC is published, MIT-licensed, prover-agnostic. Any prover that produces the c
 
 **Registered verifiers:**
 - `stub-v1` — deterministic test prover (canonical hash synthesis, in-repo)
-- `pd19-v1` (`0x7177...3deb`) — one production PSEC implementation, called over HTTP. PD19 is proprietary infrastructure maintained separately; this repo contains only the adapter that calls it.
+- `pd19-v1` (`0x7177Cc3b7EF932DfA08F81f799A9038d47f13deb`) — one production PSEC implementation, called over HTTP. PD19 is proprietary infrastructure maintained separately; this repo contains only the adapter that calls it.
 
 ## Quick start
 
