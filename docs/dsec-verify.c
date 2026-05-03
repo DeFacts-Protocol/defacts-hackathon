@@ -1,14 +1,21 @@
 /*
- * dsec-verify.c — Deterministic Semantic Execution Contract Verifier
+ * dsec-verify.c — PSEC Reference CPU Verifier
  *
- * Single-file, zero-dependency CPU reference implementation.
- * Produces a canonical deterministic hash for Qwen 2.5 14B (BF16 GGUF).
+ * Reference implementation of the Portable Semantic Execution Contract.
+ * Single-file, zero-dependency CPU verifier for the DeFacts marketplace.
+ * Produces a canonical deterministic hash for Qwen 2.5 14B (BF16 GGUF)
+ * that any PSEC-compliant prover (GPU or otherwise) must reproduce bit-exact.
+ *
+ * The "PD" / "PD19" prefixes throughout this file are internal symbol
+ * namespacing from the original implementation and do not refer to any
+ * single proprietary system; the math contract specified here is open
+ * and may be implemented by anyone.
  *
  * Accumulation contracts:
  *   WEIGHT MATMULS (Q/K/V/O/gate/up/down projections):
- *     PD19 replay — 32-lane chunked accumulation (8 contiguous elements per
- *     lane per 256-wide chunk), butterfly warp reduction after all chunks,
- *     side corrections applied post-reduction in sidecar order.
+ *     32-lane chunked accumulation (8 contiguous elements per lane per
+ *     256-wide chunk), butterfly warp reduction after all chunks, side
+ *     corrections applied post-reduction in sidecar order.
  *     Uses accumulation replay descriptor for patched positions.
  *
  *   ATTENTION (QK^T, AV):
@@ -20,7 +27,8 @@
  *   All operations single-threaded. No SIMD. No fast-math.
  *   Deterministic by construction.
  *
- * (c) 2026 Paradatum Inc. — MIT License
+ * Original implementation (c) 2026 Paradatum Inc.
+ * Released as DeFacts PSEC reference verifier under the MIT License.
  */
 
 #include <stdio.h>
@@ -1715,7 +1723,7 @@ int main(int argc, char **argv) {
     /* Load GPU RoPE table */
     {
         const char *rt = getenv("ROPE_TABLE");
-        if (!rt) rt = "/workspace/pd19_zkp_luts/rope_canonical.bin";
+        if (!rt) rt = "./psec_luts/rope_canonical.bin";
         FILE *rf = fopen(rt, "rb");
         if (rf) {
             fseek(rf, 0, SEEK_END);
