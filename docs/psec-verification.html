@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeFacts — PSEC Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --jm: 'JetBrains Mono', monospace;
+    --ft: 'Outfit', sans-serif;
+    --bg: #0a0a0c;
+    --panel: #0e0e12;
+    --green: #00ff88;
+    --amber: #f59e0b;
+    --indigo: #6366f1;
+    --w60: rgba(255,255,255,0.6);
+    --w50: rgba(255,255,255,0.5);
+    --w45: rgba(255,255,255,0.45);
+    --w40: rgba(255,255,255,0.4);
+    --w35: rgba(255,255,255,0.35);
+    --w30: rgba(255,255,255,0.3);
+    --w25: rgba(255,255,255,0.25);
+    --w20: rgba(255,255,255,0.2);
+    --w18: rgba(255,255,255,0.18);
+    --w06: rgba(255,255,255,0.06);
+    --w04: rgba(255,255,255,0.04);
+    --w03: rgba(255,255,255,0.03);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: #fff; font-family: var(--ft); -webkit-font-smoothing: antialiased; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes hashReveal { 0% { opacity: 0; letter-spacing: 6px; filter: blur(3px); } 100% { opacity: 1; letter-spacing: 0.5px; filter: blur(0); } }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 32px 28px 48px; }
+
+  /* Header */
+  .hdr { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--w06); gap: 24px; flex-wrap: wrap; }
+  .hdr-title { font-family: var(--ft); font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #fff; }
+  .hdr-sub { font-family: var(--jm); font-size: 12px; color: var(--w40); margin-top: 4px; letter-spacing: 0.5px; }
+  .hdr-meta { font-family: var(--jm); font-size: 11px; color: var(--w35); text-align: right; line-height: 1.6; }
+
+  /* Section labels */
+  .section-label { font-family: var(--jm); font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; margin-top: 32px; }
+  .section-label:first-of-type { margin-top: 0; }
+  .section-label.cpu { color: rgba(99,102,241,0.7); }
+  .section-label.zkp { color: rgba(245,158,11,0.7); }
+  .section-label.video { color: var(--w40); }
+
+  /* Two-column grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Equal-height top row: stretches both columns + their cards to match */
+  .grid-2.top-row { align-items: stretch; }
+  .grid-2.top-row > .col { display: flex; flex-direction: column; }
+  .grid-2.top-row > .col > .card { flex: 1; display: flex; flex-direction: column; }
+  /* Inside CPU card: token-block grows to fill spare vertical space */
+  .grid-2.top-row > .col > .card.cpu-right > .token-block { flex: 1; max-height: none; }
+  /* Inside ZKP card: QR sticks to bottom */
+  .grid-2.top-row > .col > .card > .qr-inline { margin-top: auto; }
+
+  /* Card */
+  .card { background: var(--panel); border-radius: 12px; overflow: hidden; }
+  .card.cpu-left { border: 1px solid rgba(99,102,241,0.2); }
+  .card.cpu-right { border: 1px solid rgba(0,255,136,0.2); }
+  .card.zkp { border: 1px solid rgba(245,158,11,0.2); }
+
+  .card-head { padding: 16px 20px; display: flex; align-items: center; gap: 10px; }
+  .card-head.cpu-left { border-bottom: 1px solid rgba(99,102,241,0.1); }
+  .card-head.cpu-right { border-bottom: 1px solid rgba(0,255,136,0.1); }
+  .card-head.zkp { border-bottom: 1px solid rgba(245,158,11,0.1); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.indigo { background: var(--indigo); }
+  .dot.green { background: var(--green); }
+  .dot.amber { background: var(--amber); }
+
+  .card-title { font-family: var(--ft); font-size: 16px; font-weight: 800; color: #fff; }
+  .card-subtitle { font-family: var(--jm); font-size: 13px; color: var(--w40); margin-top: 2px; }
+
+  /* Artifact rows */
+  .artifact-list { padding: 4px 20px 12px; }
+  .artifact { padding: 12px 0; border-bottom: 1px solid var(--w04); }
+  .artifact:last-child { border-bottom: none; }
+  .artifact-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  .artifact-label { font-family: var(--ft); font-size: 16px; font-weight: 700; color: #fff; }
+  .artifact-file { font-family: var(--jm); font-size: 12px; color: rgba(0,255,136,0.6); word-break: break-all; }
+  .artifact-desc { font-family: var(--ft); font-size: 14px; color: var(--w45); line-height: 1.6; }
+
+  /* Block */
+  .block { padding: 12px 20px; border-bottom: 1px solid var(--w04); }
+  .block:last-child { border-bottom: none; }
+  .block-label { font-family: var(--jm); font-size: 12px; color: var(--w40); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .block-label-mt { margin-bottom: 6px; }
+  .block-label-mt-lg { margin-bottom: 8px; }
+
+  /* Prompt */
+  .prompt-text { font-family: var(--ft); font-size: 17px; color: #fff; }
+  .prompt-meta { font-family: var(--jm); font-size: 13px; color: var(--w35); margin-top: 3px; }
+
+  /* Run row */
+  .run-row { padding: 12px 16px; border-bottom: 1px solid var(--w04); }
+  .run-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 3px; }
+  .run-label { font-family: var(--jm); font-size: 12px; color: var(--w35); font-weight: 600; }
+  .run-hash { font-family: var(--jm); font-size: 20px; font-weight: 700; color: var(--green); letter-spacing: 0.3px; animation: hashReveal 0.5s ease both; }
+  .run-rate { font-family: var(--jm); font-size: 11px; color: var(--w30); margin-left: auto; }
+  .run-tokenid { font-family: var(--jm); font-size: 16px; color: var(--w30); margin-bottom: 5px; padding-left: 42px; display: flex; align-items: baseline; gap: 6px; }
+  .run-tokenid-label { font-size: 10px; color: var(--w25); }
+  .run-tokenid-val { font-weight: 600; color: var(--w45); letter-spacing: 0.3px; }
+  .run-text { font-family: var(--ft); font-size: 13px; color: var(--w60); line-height: 1.5; }
+
+  /* DSEC line */
+  .dsec-line { padding: 8px 16px 8px 58px; border-bottom: 1px solid var(--w04); display: flex; align-items: baseline; gap: 8px; }
+  .dsec-label { font-family: var(--jm); font-size: 10px; color: var(--w25); }
+  .dsec-val { font-family: var(--jm); font-size: 13px; font-weight: 600; color: var(--w35); letter-spacing: 0.3px; }
+
+  /* Token grid */
+  .token-block { padding: 10px 20px; max-height: 240px; overflow-y: auto; }
+  .token-grid { display: grid; grid-template-columns: 28px 60px 1fr 65px; gap: 2px 10px; font-family: var(--jm); font-size: 13px; }
+  .tk-i { color: var(--w20); }
+  .tk-id { color: var(--w30); }
+  .tk-tok { color: var(--green); }
+  .tk-logit { color: var(--w25); text-align: right; }
+
+  /* Stat-bar */
+  .stat-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--w06); border-radius: 10px; overflow: hidden; margin-top: 20px; }
+  @media (max-width: 700px) { .stat-bar { grid-template-columns: 1fr; } }
+  .stat-cell { background: var(--panel); padding: 20px 24px; text-align: center; }
+  .stat-label { font-family: var(--jm); font-size: 12px; color: var(--w40); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-val { font-family: var(--ft); font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.amber { color: var(--amber); }
+  .stat-sub { font-family: var(--jm); font-size: 13px; color: var(--w35); margin-top: 4px; }
+  .stat-hash { font-family: var(--jm); font-size: 22px; font-weight: 700; color: var(--green); }
+
+  /* Two-col mini layout inside cards */
+  .col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .col-2 .mini-label { font-family: var(--jm); font-size: 13px; color: var(--w35); margin-bottom: 2px; }
+  .col-2 .mini-val { font-family: var(--ft); font-size: 16px; color: #fff; font-weight: 600; }
+  .col-2 .mini-sub { font-family: var(--jm); font-size: 13px; color: var(--w35); }
+
+  /* Phase rows */
+  .phase-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--w03); }
+  .phase-row:last-child { border-bottom: none; }
+  .phase-check { font-family: var(--jm); font-size: 14px; color: var(--amber); }
+  .phase-name { font-family: var(--ft); font-size: 15px; color: #fff; font-weight: 600; flex: 1; }
+  .phase-time { font-family: var(--jm); font-size: 13px; color: var(--w40); }
+
+  /* Result */
+  .result-output { font-family: var(--ft); font-size: 24px; font-weight: 800; color: var(--amber); }
+  .result-meta { font-family: var(--jm); font-size: 13px; color: var(--w35); margin-top: 4px; }
+
+  /* Video wrapper */
+  .video-wrap { background: var(--panel); border-radius: 10px; overflow: hidden; animation: fadeIn 0.4s ease 0.2s both; }
+  .video-wrap.cpu { border: 1px solid rgba(99,102,241,0.15); }
+  .video-wrap.zkp { border: 1px solid rgba(245,158,11,0.15); }
+  .video-head { padding: 16px 20px; }
+  .video-head.cpu { border-bottom: 1px solid rgba(99,102,241,0.1); }
+  .video-head.zkp { border-bottom: 1px solid rgba(245,158,11,0.1); }
+  .video-eyebrow { font-family: var(--jm); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .video-eyebrow.cpu { color: rgba(99,102,241,0.6); }
+  .video-eyebrow.zkp { color: rgba(245,158,11,0.6); }
+  .video-title { font-family: var(--ft); font-size: 18px; font-weight: 700; color: #fff; }
+  .video-desc { font-family: var(--ft); font-size: 15px; color: var(--w50); margin-top: 6px; line-height: 1.6; }
+  .video-frame { aspect-ratio: 16/9; background: #000; position: relative; }
+  .video-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .video-placeholder { font-family: var(--jm); font-size: 12px; color: var(--w25); text-align: center; padding: 80px 20px; }
+  .video-caption { padding: 8px 20px; text-align: center; font-family: var(--jm); font-size: 13px; color: var(--w25); }
+
+  /* QR */
+  .qr-box { margin-top: 24px; text-align: center; padding: 28px 24px; background: var(--panel); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; animation: fadeIn 0.4s ease 0.4s both; }
+  .qr-box.qr-side { margin-top: 0; padding: 32px 24px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .qr-side .qr-frame img { width: 200px; height: 200px; }
+  .qr-inline { padding: 20px; text-align: center; border-top: 1px solid rgba(245,158,11,0.1); }
+  .qr-inline .qr-frame img { width: 160px; height: 160px; }
+  .qr-eyebrow { font-family: var(--jm); font-size: 13px; color: var(--w30); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
+  .qr-frame { display: inline-block; background: #fff; padding: 14px; border-radius: 10px; }
+  .qr-frame img { width: 140px; height: 140px; image-rendering: pixelated; display: block; }
+  .qr-link { font-family: var(--jm); font-size: 14px; color: var(--w45); text-decoration: none; margin-top: 12px; display: inline-block; }
+  .qr-link:hover { color: var(--w60); }
+  .qr-tagline { font-family: var(--ft); font-size: 18px; font-weight: 700; color: var(--w60); margin-top: 16px; }
+
+  /* Footer */
+  .footer { text-align: center; margin-top: 32px; font-family: var(--jm); font-size: 9px; color: var(--w18); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">DeFacts — PSEC Verification</div>
+      <div class="hdr-sub">Portable Semantic Execution Contract · Reference Artifacts &amp; CPU Verifier</div>
+    </div>
+    <div class="hdr-meta">
+      Qwen 2.5 14B BF16<br>
+      14.77B parameters · greedy (temp=0)
+    </div>
+  </div>
+
+  <!-- ─── CPU Verifier Output ─── -->
+  <div class="grid-2 top-row">
+    <!-- CPU Verifier output -->
+    <div class="col">
+      <div class="section-label cpu">PSEC · Independent CPU Verification</div>
+      <div class="card cpu-right">
+        <div class="card-head cpu-right">
+          <div class="dot green"></div>
+          <div>
+            <div class="card-title">CPU Verifier Output</div>
+            <div class="card-subtitle">Zero-dependency C · Single-threaded · No GPU</div>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="block-label">Prompt</div>
+          <div class="prompt-text">"The capital of France is"</div>
+          <div class="prompt-meta">Tokens: [785, 6722, 315, 9625, 374] · Greedy (temp=0) · 20 tokens</div>
+        </div>
+
+        <div class="run-row">
+          <div class="run-head">
+            <span class="run-label">Run 1</span>
+            <span class="run-hash">ce4ace99f1335689</span>
+            <span class="run-rate">CPU · ~20 min</span>
+          </div>
+          <div class="run-tokenid">
+            <span class="run-tokenid-label">token-id</span>
+            <span class="run-tokenid-val">d0506bd8152d3211</span>
+          </div>
+          <div class="run-text">Paris. The capital of Spain is Madrid. The capital of Italy is Rome. The capital of Germany…</div>
+        </div>
+
+        <div class="dsec-line">
+          <span class="dsec-label">dsec</span>
+          <span class="dsec-val">01db9b338441dddd</span>
+        </div>
+
+        <div class="token-block">
+          <div class="block-label block-label-mt">Token-by-Token</div>
+          <div class="token-grid" id="cpu-tokens"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: explainer for why CPU verification matters -->
+    <div class="col">
+      <div class="section-label cpu">Why CPU Verification</div>
+      <div class="card cpu-left">
+        <div class="card-head cpu-left">
+          <div class="dot indigo"></div>
+          <div>
+            <div class="card-title">Don't trust the hash. Reproduce it.</div>
+            <div class="card-subtitle">The verifier of last resort</div>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="block-label">The problem</div>
+          <div class="prompt-text" style="font-size: 14px; font-family: var(--ft); font-weight: 400; color: var(--w60); line-height: 1.5;">A marketplace of GPU providers can agree on a hash. But how do you know that hash is the right answer — not just N providers agreeing on the same wrong thing? Trust collapses to whoever the providers are.</div>
+        </div>
+
+        <div class="block">
+          <div class="block-label block-label-mt">The PSEC answer</div>
+          <div class="prompt-text" style="font-size: 14px; font-family: var(--ft); font-weight: 400; color: var(--w60); line-height: 1.5;">Take the model weights, the prompt, and the published PSEC reference artifacts. Run the model yourself — on a laptop CPU, no GPU at all, in single-file zero-dependency C. If the CPU produces the same hash as the GPUs, the computation is deterministic and correct. Anyone can do this. The marketplace doesn't need to be trusted.</div>
+        </div>
+
+        <div class="block">
+          <div class="block-label block-label-mt">What this means for the marketplace</div>
+          <div class="prompt-text" style="font-size: 14px; font-family: var(--ft); font-weight: 400; color: var(--w60); line-height: 1.5;">Every receipt settled on Galileo and pinned in ENS is independently re-runnable. The CPU verifier is slow (~20 min for 20 tokens) — that's the point. It's the appeal court, not the daily driver. Fast GPU consensus for normal trades; deterministic CPU replay when a buyer wants the strongest possible guarantee.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CPU Demonstration Video ─── -->
+  <div class="section-label video">Demonstration</div>
+
+  <div class="video-wrap cpu" style="max-width: 900px; margin: 0 auto;">
+    <div class="video-head cpu">
+      <div class="video-eyebrow cpu">Deterministic Replay</div>
+      <div class="video-title">A laptop CPU reproducing a marketplace receipt.</div>
+      <div class="video-desc">Same prompt, same model, same hash — produced on commodity CPU with no GPU, no SIMD, no fast-math. The verifier is the floor of trust: if a marketplace receipt can't be reproduced by this verifier, the receipt is invalid. PSEC defines the artifacts that make this reproduction possible.</div>
+    </div>
+    <div class="video-frame">
+      <video muted playsinline autoplay loop preload="auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <source src="video/cpuproof_5s.mp4" type="video/mp4">
+      </video>
+      <div class="video-placeholder" style="display:none;">video/cpuproof_5s.mp4 — place file alongside this HTML</div>
+    </div>
+    <div class="video-caption">~20 minutes of CPU inference — compressed</div>
+  </div>
+
+  <!-- ─── PSEC ARTIFACTS (bottom) ─── -->
+  <div class="section-label cpu">PSEC v1 · Reference Artifacts</div>
+  <div class="card cpu-left">
+    <div class="card-head cpu-left">
+      <div class="dot indigo"></div>
+      <div>
+        <div class="card-title">What a PSEC implementation must produce</div>
+        <div class="card-subtitle">The published spec for a verifiable inference receipt</div>
+      </div>
+    </div>
+    <div class="artifact-list">
+      <div class="artifact">
+        <div class="artifact-head">
+          <span class="artifact-label">Model Weights</span>
+          <span class="artifact-file">qwen2.5-14b-instruct-bf16.gguf</span>
+        </div>
+        <div class="artifact-desc">Qwen 2.5 14B Instruct BF16 · 14.77B parameters · BF16 (Brain Float 16)</div>
+      </div>
+      <div class="artifact">
+        <div class="artifact-head">
+          <span class="artifact-label">Accumulation Descriptor</span>
+          <span class="artifact-file">qwen2.5-14b-accum.bin</span>
+        </div>
+        <div class="artifact-desc">Deterministic 32-lane chunked FMA reduction order with butterfly warp reduction and side corrections. Ensures identical floating-point accumulation across all GPU architectures.</div>
+      </div>
+      <div class="artifact">
+        <div class="artifact-head">
+          <span class="artifact-label">Canonical LUTs</span>
+          <span class="artifact-file">rsqrt_canonical_even.bin · rsqrt_canonical_odd.bin · exp_canonical_reduced.bin</span>
+        </div>
+        <div class="artifact-desc">Precomputed rsqrt and exp values for bit-exact nonlinear operations (RMSNorm, Softmax, SwiGLU). Eliminates hardware-dependent approximations. (96 MB)</div>
+      </div>
+      <div class="artifact">
+        <div class="artifact-head">
+          <span class="artifact-label">RoPE Table</span>
+          <span class="artifact-file">rope_canonical.bin</span>
+        </div>
+        <div class="artifact-desc">Precomputed rotary position embeddings matching GPU kernel output. Ensures position encoding is identical across implementations.</div>
+      </div>
+      <div class="artifact">
+        <div class="artifact-head">
+          <span class="artifact-label">CPU Verifier</span>
+          <span class="artifact-file">dsec-verify.c</span>
+        </div>
+        <div class="artifact-desc">Single-file, zero-dependency C implementation. No SIMD, no fast-math. Deterministic by construction. ~20 min for 20 tokens.</div>
+      </div>
+    </div>
+    <div style="padding: 16px 20px 20px; border-top: 1px solid var(--w06); margin-top: 4px;">
+      <div style="font-family: var(--jm); font-size: 11px; color: var(--w40); line-height: 1.6;">
+        PSEC is the open contract. Any prover that produces these artifacts and the canonical output for a given input can join the DeFacts marketplace.<br>
+        Reference implementation: PD19 by Paradatum (called over HTTP via the in-repo adapter).
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" id="footer">DeFacts · PSEC v1 · MIT-licensed open protocol</div>
+</div>
+
+<script>
+  const CPU_TOKENS = [
+    { id: 12095, tok: "Paris", logit: 20.0043 }, { id: 13, tok: ".", logit: 28.8701 },
+    { id: 576, tok: "The", logit: 20.7882 }, { id: 6722, tok: "capital", logit: 22.7781 },
+    { id: 315, tok: "of", logit: 27.1476 }, { id: 17689, tok: "Spain", logit: 17.2850 },
+    { id: 374, tok: "is", logit: 28.5557 }, { id: 24081, tok: "Madrid", logit: 23.1994 },
+    { id: 13, tok: ".", logit: 26.5166 }, { id: 576, tok: "The", logit: 22.2373 },
+    { id: 6722, tok: "capital", logit: 22.5830 }, { id: 315, tok: "of", logit: 27.0127 },
+    { id: 15344, tok: "Italy", logit: 20.1470 }, { id: 374, tok: "is", logit: 26.9006 },
+    { id: 21718, tok: "Rome", logit: 23.0380 }, { id: 13, tok: ".", logit: 25.9191 },
+    { id: 576, tok: "The", logit: 22.5242 }, { id: 6722, tok: "capital", logit: 22.1054 },
+    { id: 315, tok: "of", logit: 25.2764 }, { id: 9856, tok: "Germany", logit: 20.3150 }
+  ];
+  const tokenGrid = document.getElementById('cpu-tokens');
+  CPU_TOKENS.forEach((t, i) => {
+    tokenGrid.insertAdjacentHTML('beforeend',
+      `<span class="tk-i">${i + 1}</span>` +
+      `<span class="tk-id">id=${t.id}</span>` +
+      `<span class="tk-tok">${t.tok}</span>` +
+      `<span class="tk-logit">${t.logit.toFixed(4)}</span>`
+    );
+  });
+
+  document.getElementById('footer').textContent =
+    `DeFacts · PSEC v1 · MIT-licensed open protocol · ${new Date().getFullYear()}`;
+</script>
+</body>
+</html>
