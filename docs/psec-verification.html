@@ -275,77 +275,85 @@
     </div>
   </div>
 
-  <!-- ─── CPU Demonstration Video ─── -->
-  <div class="section-label video">Demonstration</div>
+  <!-- ─── BOTTOM ROW: Demo Video + PSEC Artifacts side-by-side ─── -->
+  <div class="grid-2 top-row" style="margin-top: 32px;">
 
-  <div class="video-wrap cpu" style="max-width: 900px; margin: 0 auto;">
-    <div class="video-head cpu">
-      <div class="video-eyebrow cpu">Deterministic Replay</div>
-      <div class="video-title">A laptop CPU reproducing a marketplace receipt.</div>
-      <div class="video-desc">Same prompt, same model, same hash — produced on commodity CPU with no GPU, no SIMD, no fast-math. The verifier is the floor of trust: if a marketplace receipt can't be reproduced by this verifier, the receipt is invalid. PSEC defines the artifacts that make this reproduction possible.</div>
+    <!-- Demo Video (left) -->
+    <div class="col">
+      <div class="section-label video">Demonstration</div>
+      <div class="video-wrap cpu" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="video-head cpu">
+          <div class="video-eyebrow cpu">Deterministic Replay</div>
+          <div class="video-title">A laptop CPU reproducing a marketplace receipt.</div>
+          <div class="video-desc">Same prompt, same model, same hash — produced on commodity CPU with no GPU, no SIMD, no fast-math. The verifier is the floor of trust: if a marketplace receipt can't be reproduced by this verifier, the receipt is invalid. PSEC defines the artifacts that make this reproduction possible.</div>
+        </div>
+        <div class="video-frame" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <video id="cpuproof-video" muted playsinline autoplay controls preload="auto" style="width: 100%; height: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <source src="video/cpuproof_5s.mp4" type="video/mp4">
+          </video>
+          <div class="video-placeholder" style="display:none;">video/cpuproof_5s.mp4 — place file alongside this HTML</div>
+        </div>
+        <div class="video-caption">~20 minutes of CPU inference — compressed. Click to replay.</div>
+      </div>
     </div>
-    <div class="video-frame">
-      <video muted playsinline autoplay loop preload="auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <source src="video/cpuproof_5s.mp4" type="video/mp4">
-      </video>
-      <div class="video-placeholder" style="display:none;">video/cpuproof_5s.mp4 — place file alongside this HTML</div>
-    </div>
-    <div class="video-caption">~20 minutes of CPU inference — compressed</div>
-  </div>
 
-  <!-- ─── PSEC ARTIFACTS (bottom) ─── -->
-  <div class="section-label cpu">PSEC v1 · Reference Artifacts</div>
-  <div class="card cpu-left">
-    <div class="card-head cpu-left">
-      <div class="dot indigo"></div>
-      <div>
-        <div class="card-title">What a PSEC implementation must produce</div>
-        <div class="card-subtitle">The published spec for a verifiable inference receipt</div>
+    <!-- PSEC Artifacts (right) -->
+    <div class="col">
+      <div class="section-label cpu">PSEC v1 · Reference Artifacts</div>
+      <div class="card cpu-left">
+        <div class="card-head cpu-left">
+          <div class="dot indigo"></div>
+          <div>
+            <div class="card-title">What a PSEC implementation must produce</div>
+            <div class="card-subtitle">The published spec for a verifiable inference receipt</div>
+          </div>
+        </div>
+        <div class="artifact-list">
+          <div class="artifact">
+            <div class="artifact-head">
+              <span class="artifact-label">Model Weights</span>
+              <span class="artifact-file">qwen2.5-14b-instruct-bf16.gguf</span>
+            </div>
+            <div class="artifact-desc">Qwen 2.5 14B Instruct BF16 · 14.77B parameters · BF16 (Brain Float 16)</div>
+          </div>
+          <div class="artifact">
+            <div class="artifact-head">
+              <span class="artifact-label">Accumulation Descriptor</span>
+              <span class="artifact-file">qwen2.5-14b-accum.bin</span>
+            </div>
+            <div class="artifact-desc">Deterministic 32-lane chunked FMA reduction order with butterfly warp reduction and side corrections. Ensures identical floating-point accumulation across all GPU architectures.</div>
+          </div>
+          <div class="artifact">
+            <div class="artifact-head">
+              <span class="artifact-label">Canonical LUTs</span>
+              <span class="artifact-file">rsqrt_canonical_even.bin · rsqrt_canonical_odd.bin · exp_canonical_reduced.bin</span>
+            </div>
+            <div class="artifact-desc">Precomputed rsqrt and exp values for bit-exact nonlinear operations (RMSNorm, Softmax, SwiGLU). Eliminates hardware-dependent approximations. (96 MB)</div>
+          </div>
+          <div class="artifact">
+            <div class="artifact-head">
+              <span class="artifact-label">RoPE Table</span>
+              <span class="artifact-file">rope_canonical.bin</span>
+            </div>
+            <div class="artifact-desc">Precomputed rotary position embeddings matching GPU kernel output. Ensures position encoding is identical across implementations.</div>
+          </div>
+          <div class="artifact">
+            <div class="artifact-head">
+              <span class="artifact-label">CPU Verifier</span>
+              <span class="artifact-file">dsec-verify.c</span>
+            </div>
+            <div class="artifact-desc">Single-file, zero-dependency C implementation. No SIMD, no fast-math. Deterministic by construction. ~20 min for 20 tokens.</div>
+          </div>
+        </div>
+        <div style="padding: 16px 20px 20px; border-top: 1px solid var(--w06); margin-top: 4px;">
+          <div style="font-family: var(--jm); font-size: 11px; color: var(--w40); line-height: 1.6;">
+            PSEC is the open contract. Any prover that produces these artifacts and the canonical output for a given input can join the DeFacts marketplace.<br>
+            Reference implementation: PD19 by Paradatum (called over HTTP via the in-repo adapter).
+          </div>
+        </div>
       </div>
     </div>
-    <div class="artifact-list">
-      <div class="artifact">
-        <div class="artifact-head">
-          <span class="artifact-label">Model Weights</span>
-          <span class="artifact-file">qwen2.5-14b-instruct-bf16.gguf</span>
-        </div>
-        <div class="artifact-desc">Qwen 2.5 14B Instruct BF16 · 14.77B parameters · BF16 (Brain Float 16)</div>
-      </div>
-      <div class="artifact">
-        <div class="artifact-head">
-          <span class="artifact-label">Accumulation Descriptor</span>
-          <span class="artifact-file">qwen2.5-14b-accum.bin</span>
-        </div>
-        <div class="artifact-desc">Deterministic 32-lane chunked FMA reduction order with butterfly warp reduction and side corrections. Ensures identical floating-point accumulation across all GPU architectures.</div>
-      </div>
-      <div class="artifact">
-        <div class="artifact-head">
-          <span class="artifact-label">Canonical LUTs</span>
-          <span class="artifact-file">rsqrt_canonical_even.bin · rsqrt_canonical_odd.bin · exp_canonical_reduced.bin</span>
-        </div>
-        <div class="artifact-desc">Precomputed rsqrt and exp values for bit-exact nonlinear operations (RMSNorm, Softmax, SwiGLU). Eliminates hardware-dependent approximations. (96 MB)</div>
-      </div>
-      <div class="artifact">
-        <div class="artifact-head">
-          <span class="artifact-label">RoPE Table</span>
-          <span class="artifact-file">rope_canonical.bin</span>
-        </div>
-        <div class="artifact-desc">Precomputed rotary position embeddings matching GPU kernel output. Ensures position encoding is identical across implementations.</div>
-      </div>
-      <div class="artifact">
-        <div class="artifact-head">
-          <span class="artifact-label">CPU Verifier</span>
-          <span class="artifact-file">dsec-verify.c</span>
-        </div>
-        <div class="artifact-desc">Single-file, zero-dependency C implementation. No SIMD, no fast-math. Deterministic by construction. ~20 min for 20 tokens.</div>
-      </div>
-    </div>
-    <div style="padding: 16px 20px 20px; border-top: 1px solid var(--w06); margin-top: 4px;">
-      <div style="font-family: var(--jm); font-size: 11px; color: var(--w40); line-height: 1.6;">
-        PSEC is the open contract. Any prover that produces these artifacts and the canonical output for a given input can join the DeFacts marketplace.<br>
-        Reference implementation: PD19 by Paradatum (called over HTTP via the in-repo adapter).
-      </div>
-    </div>
+
   </div>
 
   <div class="footer" id="footer">DeFacts · PSEC v1 · MIT-licensed open protocol</div>
